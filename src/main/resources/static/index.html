@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-tac-toe</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      max-width: 420px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    .choice {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .choice label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .choice input { cursor: pointer; }
+    .choice .sym { font-size: 1.25rem; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      width: 100%;
+      max-width: 240px;
+      margin: 0 auto 1rem;
+      background: #333;
+      padding: 4px;
+      border-radius: 8px;
+    }
+    .cell {
+      aspect-ratio: 1;
+      background: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 2rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .cell:hover:not(.taken) {
+      background: #e9ecef;
+    }
+    .cell.taken {
+      cursor: default;
+    }
+    .cell.x { color: #0d6efd; }
+    .cell.o { color: #dc3545; }
+    .status {
+      text-align: center;
+      min-height: 1.5rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+    .status.win { color: #0d6efd; }
+    .status.lose { color: #dc3545; }
+    .status.draw { color: #6c757d; }
+    .actions {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .actions button {
+      padding: 0.5rem 1.25rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+      background: #fff;
+      cursor: pointer;
+    }
+    .actions button:hover {
+      background: #e9ecef;
+    }
+    .actions button.primary {
+      background: #0d6efd;
+      color: #fff;
+      border-color: #0d6efd;
+    }
+    .actions button.primary:hover {
+      background: #0b5ed7;
+    }
+    .actions button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .auth {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .auth input {
+      padding: 0.45rem 0.6rem;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+    }
+    .statistics {
+      margin-top: 1rem;
+    }
+    .statistics h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.4rem;
+    }
+    .statistics ul {
+      padding-left: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Игра X_0</h1>
+  <div class="auth">
+    <input id="login" placeholder="Логин" autocomplete="username">
+    <input id="password" type="password" placeholder="Пароль" autocomplete="current-password">
+    <button type="button" id="register">Регистрация</button>
+    <button type="button" id="enter">Войти</button>
+  </div>
+  <div class="choice" id="choice">
+    <label><input type="radio" name="sym" value="1" checked> <span class="sym">X</span> — крестик</label>
+    <label><input type="radio" name="sym" value="2"> <span class="sym">O</span> — нолик</label>
+  </div>
+  <div class="choice">
+    <label><input type="radio" name="opponent" value="COMPUTER" checked> Компьютер</label>
+    <label><input type="radio" name="opponent" value="USER"> Человек</label>
+  </div>
+  <ul id="openGames"></ul>
+  <p class="status" id="status">Выберите за кого играть</p>
+  <div class="board" id="board">
+    <button type="button" class="cell" data-row="0" data-col="0" aria-label="Клетка 0 0"></button>
+    <button type="button" class="cell" data-row="0" data-col="1" aria-label="Клетка 0 1"></button>
+    <button type="button" class="cell" data-row="0" data-col="2" aria-label="Клетка 0 2"></button>
+    <button type="button" class="cell" data-row="1" data-col="0" aria-label="Клетка 1 0"></button>
+    <button type="button" class="cell" data-row="1" data-col="1" aria-label="Клетка 1 1"></button>
+    <button type="button" class="cell" data-row="1" data-col="2" aria-label="Клетка 1 2"></button>
+    <button type="button" class="cell" data-row="2" data-col="0" aria-label="Клетка 2 0"></button>
+    <button type="button" class="cell" data-row="2" data-col="1" aria-label="Клетка 2 1"></button>
+    <button type="button" class="cell" data-row="2" data-col="2" aria-label="Клетка 2 2"></button>
+  </div>
+  <div class="actions">
+    <button type="button" id="newGame" class="primary">Старт</button>
+    <button type="button" id="openList">Доступные игры</button>
+    <button type="button" id="refreshGame">Обновить партию</button>
+    <button type="button" id="showHistory">История игр</button>
+    <button type="button" id="showLeaderboard">Лидеры</button>
+  </div>
+  <section class="statistics">
+    <h2>История завершённых игр</h2>
+    <ul id="gameHistory"><li>Нажмите «История игр»</li></ul>
+    <h2>Таблица лидеров</h2>
+    <ul id="leaderboard"><li>Нажмите «Лидеры»</li></ul>
+  </section>
+
+  <script>
+    const EMPTY = 0, X = 1, O = 2;
+    let gameId = null;
+    let field = null;
+    let playerSymbol = X;
+    let gameOver = false;
+    let myTurn = false;
+    let authHeader = null;
+    let refreshToken = null;
+    let userId = null;
+
+    const board = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const newGameBtn = document.getElementById('newGame');
+    const choiceRadios = document.querySelectorAll('input[name="sym"]');
+
+    function getSelectedSymbol() {
+      return document.querySelector('input[name="sym"]:checked').value === '2' ? O : X;
+    }
+
+    function setStatus(msg, className = '') {
+      statusEl.textContent = msg;
+      statusEl.className = 'status ' + className;
+    }
+
+    function getWinner(grid) {
+      const lines = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (const [a, b, c] of lines) {
+        const r = Math.floor(a/3), col = a%3;
+        const v = grid[r][col];
+        if (v && grid[Math.floor(b/3)][b%3] === v && grid[Math.floor(c/3)][c%3] === v) return v;
+      }
+      return 0;
+    }
+
+    function isFull(grid) {
+      return grid.every(row => row.every(c => c !== 0));
+    }
+
+    function render() {
+      if (!field) return;
+      const cells = board.querySelectorAll('.cell');
+      field.forEach((row, r) => {
+        row.forEach((val, c) => {
+          const idx = r * 3 + c;
+          const cell = cells[idx];
+          cell.textContent = val === X ? 'X' : val === O ? 'O' : '';
+          cell.classList.toggle('taken', val !== EMPTY);
+          cell.classList.toggle('x', val === X);
+          cell.classList.toggle('o', val === O);
+        });
+      });
+    }
+
+    async function registerUser() {
+      try {
+        const r = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            login: document.getElementById('login').value,
+            password: document.getElementById('password').value
+          })
+        });
+        const ok = await r.json();
+        setStatus(ok ? 'Регистрация прошла' : 'Такой логин уже занят или данные пустые');
+      } catch (e) {
+        setStatus('Ошибка: ' + e.message);
+      }
+    }
+
+    async function loginUser() {
+      try {
+        const r = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            login: document.getElementById('login').value,
+            password: document.getElementById('password').value
+          })
+        });
+        if (!r.ok) {
+          authHeader = null;
+          refreshToken = null;
+          userId = null;
+          setStatus('Неверный логин или пароль');
+          return;
+        }
+        const tokens = await r.json();
+        authHeader = tokens.type + ' ' + tokens.accessToken;
+        refreshToken = tokens.refreshToken;
+        const profile = await fetch('/user/me', { headers: { 'Authorization': authHeader } });
+        if (!profile.ok) throw new Error('Не удалось получить профиль');
+        userId = (await profile.json()).id;
+        setStatus('Вход выполнен: ' + userId);
+      } catch (e) {
+        authHeader = null;
+        refreshToken = null;
+        userId = null;
+        setStatus('Ошибка: ' + e.message);
+      }
+    }
+
+    async function createGame() {
+      if (!authHeader) {
+        setStatus('Сначала войдите');
+        return;
+      }
+      playerSymbol = getSelectedSymbol();
+      try {
+        const opponent = document.querySelector('input[name="opponent"]:checked').value;
+        const r = await fetch('/game', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          body: JSON.stringify({ playerSymbol: playerSymbol, opponent: opponent })
+        });
+        if (!r.ok) throw new Error('Не удалось создать игру');
+        applyGame(await r.json());
+      } catch (e) {
+        setStatus('Ошибка: ' + e.message);
+      }
+    }
+
+    function applyGame(data) {
+      gameId = data.id;
+      field = data.field;
+      if (data.xPlayerId === userId) playerSymbol = X;
+      else if (data.oPlayerId === userId) playerSymbol = O;
+      gameOver = data.state === 'WIN' || data.state === 'DRAW';
+      myTurn = data.state === 'TURN' && data.turnPlayerId === userId;
+      render();
+      if (data.state === 'WAITING') setStatus('Ожидание второго игрока');
+      else if (data.state === 'DRAW') setStatus('Ничья', 'draw');
+      else if (data.state === 'WIN' && data.winnerId === userId) setStatus('Вы победили', 'win');
+      else if (data.state === 'WIN') setStatus(data.winnerId ? 'Победил соперник' : 'Победил компьютер', 'lose');
+      else if (myTurn) setStatus('Ваш ход (' + (playerSymbol === X ? 'X' : 'O') + ')');
+      else setStatus('Ход соперника');
+    }
+
+    async function loadOpenGames() {
+      if (!authHeader) {
+        setStatus('Сначала войдите');
+        return;
+      }
+      const r = await fetch('/game/available', { headers: { 'Authorization': authHeader } });
+      const games = await r.json();
+      const list = document.getElementById('openGames');
+      list.innerHTML = '';
+      if (!games.length) {
+        setStatus('Нет игр, к которым можно присоединиться');
+        return;
+      }
+      games.forEach(game => {
+        const item = document.createElement('li');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Присоединиться ' + game.id;
+        button.addEventListener('click', () => joinGame(game.id));
+        item.appendChild(button);
+        list.appendChild(item);
+      });
+    }
+
+    async function joinGame(id) {
+      const r = await fetch('/game/' + id + '/join', {
+        method: 'POST',
+        headers: { 'Authorization': authHeader }
+      });
+      const text = await r.text();
+      if (!r.ok) {
+        setStatus('Ошибка: ' + text);
+        return;
+      }
+      applyGame(JSON.parse(text));
+    }
+
+    async function refreshCurrentGame() {
+      if (!authHeader || !gameId) {
+        setStatus('Нет текущей партии');
+        return;
+      }
+      const r = await fetch('/game/' + gameId, { headers: { 'Authorization': authHeader } });
+      const text = await r.text();
+      if (!r.ok) {
+        setStatus('Ошибка: ' + text);
+        return;
+      }
+      applyGame(JSON.parse(text));
+    }
+
+    async function loadHistory() {
+      if (!authHeader) {
+        setStatus('Сначала войдите');
+        return;
+      }
+      const r = await fetch('/game/history', { headers: { 'Authorization': authHeader } });
+      if (!r.ok) {
+        setStatus('Не удалось загрузить историю');
+        return;
+      }
+      const games = await r.json();
+      const list = document.getElementById('gameHistory');
+      list.innerHTML = '';
+      if (!games.length) {
+        list.innerHTML = '<li>Завершённых игр пока нет</li>';
+        return;
+      }
+      games.forEach(game => {
+        const item = document.createElement('li');
+        const result = game.state === 'DRAW'
+          ? 'Ничья'
+          : game.winnerId === userId ? 'Победа' : 'Поражение';
+        const time = new Date(game.createdAt).toLocaleString('ru-RU');
+        item.textContent = time + ' — ' + result + ' — ' + game.id;
+        list.appendChild(item);
+      });
+    }
+
+    async function loadLeaderboard() {
+      if (!authHeader) {
+        setStatus('Сначала войдите');
+        return;
+      }
+      const r = await fetch('/game/leaderboard?n=10', { headers: { 'Authorization': authHeader } });
+      if (!r.ok) {
+        setStatus('Не удалось загрузить таблицу лидеров');
+        return;
+      }
+      const players = await r.json();
+      const list = document.getElementById('leaderboard');
+      list.innerHTML = '';
+      if (!players.length) {
+        list.innerHTML = '<li>Данных пока нет</li>';
+        return;
+      }
+      players.forEach((player, index) => {
+        const item = document.createElement('li');
+        item.textContent = (index + 1) + '. ' + player.login
+          + ' — соотношение побед: ' + Number(player.winRatio).toFixed(2);
+        list.appendChild(item);
+      });
+    }
+
+    async function makeMove(row, col) {
+      if (!gameId || !field || gameOver || !myTurn || field[row][col] !== EMPTY) return;
+      const next = field.map(r => [...r]);
+      next[row][col] = playerSymbol;
+      board.classList.add('loading');
+      setStatus('Ход отправлен…');
+      try {
+        const res = await fetch('/game/' + gameId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          body: JSON.stringify({ id: gameId, field: next, playerSymbol: playerSymbol })
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          setStatus('Ошибка: ' + text);
+          board.classList.remove('loading');
+          return;
+        }
+        applyGame(JSON.parse(text));
+      } catch (e) {
+        setStatus('Ошибка: ' + e.message);
+      }
+      board.classList.remove('loading');
+    }
+
+    board.querySelectorAll('.cell').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const row = parseInt(cell.dataset.row, 10);
+        const col = parseInt(cell.dataset.col, 10);
+        makeMove(row, col);
+      });
+    });
+
+    document.getElementById('register').addEventListener('click', registerUser);
+    document.getElementById('enter').addEventListener('click', loginUser);
+    newGameBtn.addEventListener('click', createGame);
+    document.getElementById('openList').addEventListener('click', loadOpenGames);
+    document.getElementById('refreshGame').addEventListener('click', refreshCurrentGame);
+    document.getElementById('showHistory').addEventListener('click', loadHistory);
+    document.getElementById('showLeaderboard').addEventListener('click', loadLeaderboard);
+  </script>
+</body>
+</html>
